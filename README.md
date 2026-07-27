@@ -1,21 +1,23 @@
-# React + TypeScript + Vite + shadcn/ui
+# Scappers
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+Scappers is a compact used-car listing dashboard that compares live inventory from Cars24 and Spinny in one place.
 
-## Adding components
+## Deploy to GitHub Pages
 
-To add components to your app, run the following command:
+1. Push the repository to GitHub.
+2. Open the repository settings and enable GitHub Pages using the GitHub Actions deployment method.
+3. The workflow in [.github/workflows/deploy.yml](.github/workflows/deploy.yml) will publish the app automatically on every push to the main branch.
+4. Your site will be available at https://omanshu840.github.io/scappers/.
+
+## Local development
 
 ```bash
-npx shadcn@latest add button
+pnpm install
+pnpm dev
 ```
 
-This will place the ui components in the `src/components` directory.
+## Build
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
+```bash
+pnpm build
 ```

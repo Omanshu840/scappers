@@ -1,0 +1,17 @@
+{
+  "name": "Scappers",
+  "short_name": "Scappers",
+  "description": "Compare live used-car listings from Cars24 and Spinny in one compact dashboard.",
+  "start_url": "/scappers/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
