@@ -3,6 +3,7 @@ import { CarListingCard } from "@/components/car-listings/CarListingCard";
 import { CarListingFilters } from "@/components/car-listings/CarListingFilters";
 import { CarListingsHeader } from "@/components/car-listings/CarListingsHeader";
 import { ListingState } from "@/components/car-listings/ListingState";
+import { Button } from "@/components/ui/button";
 import { useCars, useLiveCars } from "@/hooks/useCars";
 import type {
   SortOption,
@@ -19,6 +20,9 @@ export default function CarListings() {
   const cars = liveCarsQuery.data ?? cachedCarsQuery.data ?? [];
   const isLoading = cachedCarsQuery.isLoading && !cachedCarsQuery.data;
   const error = cachedCarsQuery.error ?? liveCarsQuery.error;
+
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
+  const priceChangesPath = `${basePath}/price-changes`
 
   const filteredCars = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -50,6 +54,17 @@ export default function CarListings() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:px-8">
       <CarListingsHeader count={filteredCars.length} />
+
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            Track listings whose price moved since they were first added.
+          </p>
+        </div>
+        <Button variant="secondary" onClick={() => window.location.assign(priceChangesPath)}>
+          View price changes
+        </Button>
+      </div>
 
       <CarListingFilters
         search={search}
