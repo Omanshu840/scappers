@@ -35,7 +35,7 @@ function normalizeDetailUrl(
 }
 
 function getAdjustedPrice(source: "cars24" | "spinny", price: number) {
-  return source === "cars24" ? price + 50000 : price + 10000;
+  return source === "cars24" ? price + 50000 : price;
 }
 
 function getCoverImage(row: any) {
