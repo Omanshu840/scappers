@@ -2,6 +2,7 @@ import { supabase } from "../lib/supabase";
 
 export type CarCard = {
   id: string;
+  externalId: string;
   source: "cars24" | "spinny";
   brand: string;
   carName: string;
@@ -161,6 +162,7 @@ function transformCars(data: any[]) {
 
       return {
         id: row.id,
+        externalId: row.external_id,
         source: row.source,
         brand: getBrand(row),
         carName: getCarName(row),
@@ -183,7 +185,7 @@ function transformCars(data: any[]) {
 export async function getCars(): Promise<CarCard[]> {
   const { data, error } = await supabase
     .from("cars")
-    .select("id, source, make, model, variant, year, city, odometer_km, latest_price, raw_json")
+    .select("id, source, external_id, make, model, variant, year, city, odometer_km, latest_price, raw_json")
     .eq("is_active", true);
 
   if (error) throw error;
@@ -191,12 +193,27 @@ export async function getCars(): Promise<CarCard[]> {
   return transformCars(data ?? []);
 }
 
-export async function getLiveCars(): Promise<CarCard[]> {
-  const { data, error } = await supabase.functions.invoke("get-live-listings", {
-    method: "GET", // Matches standard fetch request behavior
+// Absolute URL of the standalone Vercel project hosting api/live-listings.ts.
+// Set VITE_LIVE_LISTINGS_API_URL in your Vite app's .env (and in Vercel's
+// env vars for prod builds). Falls back to a relative path in case you ever
+// proxy/rewrite it to the same origin.
+const LIVE_LISTINGS_API_URL =
+  import.meta.env.VITE_LIVE_LISTINGS_API_URL ?? "/api/live-listings";
+
+export async function getLiveCars(existingCars: CarCard[]): Promise<CarCard[]> {
+  const response = await fetch(LIVE_LISTINGS_API_URL, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ existingCars }),
   });
 
-  if (error) throw error;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.error ?? `Live listings request failed: ${response.status}`);
+  }
 
+  const data = await response.json();
   return transformCars(data ?? []);
 }

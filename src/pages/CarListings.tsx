@@ -14,7 +14,7 @@ export default function CarListings() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
   const cachedCarsQuery = useCars();
-  const liveCarsQuery = useLiveCars();
+  const liveCarsQuery = useLiveCars(cachedCarsQuery.data ?? []);
 
   const cars = liveCarsQuery.data ?? cachedCarsQuery.data ?? [];
   const isLoading = cachedCarsQuery.isLoading && !cachedCarsQuery.data;
@@ -59,10 +59,6 @@ export default function CarListings() {
         onSourceFilterChange={setSourceFilter}
         onSortByChange={setSortBy}
       />
-
-      {liveCarsQuery.isFetching && cachedCarsQuery.data && !liveCarsQuery.data && (
-        <ListingState>Refreshing live listings...</ListingState>
-      )}
       {isLoading && <ListingState>Loading cars...</ListingState>}
       {!cars.length && error && (
         <ListingState tone="error">
