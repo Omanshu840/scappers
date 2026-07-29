@@ -2,12 +2,12 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import type { CarCard } from "@/api/cars"
 import { cn } from "@/lib/utils"
-
 import {
   formatCompactINR,
   formatKilometers,
   formatSource,
 } from "./formatters"
+import { PriceHistorySection } from "./PriceHistorySection"
 
 type CarListingCardProps = {
   car: CarCard
@@ -25,15 +25,8 @@ function SpecPill({ children }: { children: React.ReactNode }) {
 }
 
 export function CarListingCard({ car }: CarListingCardProps) {
-  const card = (
-    <Card
-      size="sm"
-      aria-disabled={car.booked}
-      className={cn(
-        "gap-0 rounded-lg py-0 shadow-sm ring-border transition group-hover/card-link:-translate-y-0.5 group-hover/card-link:ring-primary/25 group-hover/card-link:shadow-md max-sm:grid max-sm:grid-cols-[9.25rem_minmax(0,1fr)]",
-        car.booked && "bg-muted/50 opacity-75 hover:translate-y-0 hover:shadow-sm"
-      )}
-    >
+  const mainContent = (
+    <>
       <div className="relative aspect-[1.85] border-b bg-muted max-sm:aspect-auto max-sm:border-b-0 max-sm:border-r">
         {car.coverImage ? (
           <img
@@ -47,7 +40,6 @@ export function CarListingCard({ car }: CarListingCardProps) {
             No image
           </div>
         )}
-
         {car.booked && (
           <Badge
             variant="default"
@@ -57,7 +49,6 @@ export function CarListingCard({ car }: CarListingCardProps) {
           </Badge>
         )}
       </div>
-
       <CardContent className="space-y-2.5 p-3">
         <div className="space-y-0.5">
           <div className="flex items-start justify-between gap-2 max-sm:flex-col max-sm:gap-1">
@@ -69,17 +60,14 @@ export function CarListingCard({ car }: CarListingCardProps) {
               ₹ {formatCompactINR(car.price)}
             </div>
           </div>
-
           <p className="truncate text-sm font-medium text-muted-foreground">
             {car.variant || car.brand}
           </p>
         </div>
-
         <div className="flex flex-wrap gap-1.5">
           <SpecPill>{formatKilometers(car.kmDriven)}</SpecPill>
           <SpecPill>{car.modelYear ?? "N/A"}</SpecPill>
         </div>
-
         <div className="flex items-center justify-between gap-2 border-t pt-2 text-xs text-muted-foreground max-sm:items-start">
           <p className="min-w-0 truncate">
             {car.location ?? "Location not available"}
@@ -92,20 +80,36 @@ export function CarListingCard({ car }: CarListingCardProps) {
           </Badge>
         </div>
       </CardContent>
-    </Card>
+    </>
   )
 
-  if (!car.detailUrl) return card
-
   return (
-    <a
-      href={car.detailUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="group/card-link block rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      aria-label={`Open ${car.carName} on ${formatSource(car.source)}`}
+    <Card
+      size="sm"
+      aria-disabled={car.booked}
+      className={cn(
+        "gap-0 overflow-hidden rounded-lg py-0 shadow-sm ring-border transition hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/25",
+        car.booked && "bg-muted/50 opacity-75 hover:translate-y-0 hover:shadow-sm"
+      )}
     >
-      {card}
-    </a>
+      {/* Clickable area is scoped to image + details only, so the price-history
+          toggle below can be its own interactive control without nesting a
+          <button> inside an <a> (invalid HTML) or fighting click handlers. */}
+      {car.detailUrl ? (
+        <a
+          href={car.detailUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="block outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 max-sm:grid max-sm:grid-cols-[9.25rem_minmax(0,1fr)]"
+          aria-label={`Open ${car.carName} on ${formatSource(car.source)}`}
+        >
+          {mainContent}
+        </a>
+      ) : (
+        <div className="max-sm:grid max-sm:grid-cols-[9.25rem_minmax(0,1fr)]">{mainContent}</div>
+      )}
+
+      <PriceHistorySection carId={car.id} />
+    </Card>
   )
 }

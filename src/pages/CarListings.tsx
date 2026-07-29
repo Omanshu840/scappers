@@ -9,6 +9,7 @@ import type {
   SortOption,
   SourceFilter,
 } from "@/components/car-listings/types";
+import { navigate } from "@/lib/router";
 
 export default function CarListings() {
   const [search, setSearch] = useState("");
@@ -61,7 +62,7 @@ export default function CarListings() {
             Track listings whose price moved since they were first added.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => window.location.assign(priceChangesPath)}>
+        <Button variant="secondary" onClick={() => navigate(priceChangesPath)}>
           View price changes
         </Button>
       </div>

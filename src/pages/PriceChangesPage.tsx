@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { splitByActive, useCarsWithPriceChanges } from "@/hooks/useCarsWithPriceChanges";
@@ -11,7 +11,16 @@ export default function PriceChangesPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="space-y-1">
+      <header className="space-y-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-fit px-0"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Price changes</h1>
         <p className="text-sm text-muted-foreground">
           Listings whose price has moved since they were first tracked.
