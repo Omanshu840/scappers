@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PriceChangeCard } from "./PriceChangeCard";
+import { CarListingCard } from "./CarListingCard";
 import type { PriceChangeCarCard } from "@/api/priceChangedCars";
 
 type Props = {
@@ -38,7 +38,7 @@ export function CarSection({ title, description, cars, emptyMessage, tone = "def
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {cars.map((car) => (
-            <PriceChangeCard key={car.id} car={car} />
+            <CarListingCard key={car.id} car={car} />
           ))}
         </div>
       )}

@@ -1,29 +1,42 @@
-import { useMemo, useState } from "react";
-import { CarListingCard } from "@/components/car-listings/CarListingCard";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { CarListingFilters } from "@/components/car-listings/CarListingFilters";
 import { CarListingsHeader } from "@/components/car-listings/CarListingsHeader";
 import { ListingState } from "@/components/car-listings/ListingState";
-import { Button } from "@/components/ui/button";
+import { CarSection } from "@/components/car-listings/CarSection";
+import { CarSectionSkeleton } from "@/components/car-listings/CarSectionSkeleton";
 import { useCars, useLiveCars } from "@/hooks/useCars";
-import type {
-  SortOption,
-  SourceFilter,
-} from "@/components/car-listings/types";
-import { navigate } from "@/lib/router";
+import { useAllCarsWithPriceInfo } from "@/hooks/useCarsWithPriceChanges";
+import type { SortOption, SourceFilter } from "@/components/car-listings/types";
 
 export default function CarListings() {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
+
+  const queryClient = useQueryClient();
+
+  // Background sync only — this runs your existing scrape/upsert pipeline
+  // so the DB (and therefore the view-based query below) reflects fresh
+  // prices. We don't render `liveCarsQuery.data` directly: it only covers
+  // active cars and doesn't carry price-change history, whereas the query
+  // below already has everything (active + inactive + price movement).
   const cachedCarsQuery = useCars();
   const liveCarsQuery = useLiveCars(cachedCarsQuery.data ?? []);
 
-  const cars = liveCarsQuery.data ?? cachedCarsQuery.data ?? [];
-  const isLoading = cachedCarsQuery.isLoading && !cachedCarsQuery.data;
-  const error = cachedCarsQuery.error ?? liveCarsQuery.error;
+  useEffect(() => {
+    if (liveCarsQuery.isSuccess) {
+      queryClient.invalidateQueries({ queryKey: ["all-cars-with-price-info"] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveCarsQuery.dataUpdatedAt]);
 
-  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "")
-  const priceChangesPath = `${basePath}/price-changes`
+  const allCarsQuery = useAllCarsWithPriceInfo();
+
+  const cars = allCarsQuery.data ?? [];
+  const isLoading = allCarsQuery.isLoading && !allCarsQuery.data;
+  const isRefreshing = liveCarsQuery.isFetching || allCarsQuery.isFetching;
+  const error = allCarsQuery.error;
 
   const filteredCars = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -52,20 +65,12 @@ export default function CarListings() {
     return result;
   }, [cars, search, sourceFilter, sortBy]);
 
+  const activeCars = filteredCars.filter((car) => car.isActive);
+  const inactiveCars = filteredCars.filter((car) => !car.isActive);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-3 py-4 sm:gap-5 sm:px-6 sm:py-5 lg:px-8">
       <CarListingsHeader count={filteredCars.length} />
-
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Track listings whose price moved since they were first added.
-          </p>
-        </div>
-        <Button variant="secondary" onClick={() => navigate(priceChangesPath)}>
-          View price changes
-        </Button>
-      </div>
 
       <CarListingFilters
         search={search}
@@ -75,25 +80,45 @@ export default function CarListings() {
         onSourceFilterChange={setSourceFilter}
         onSortByChange={setSortBy}
       />
-      {isLoading && <ListingState>Loading cars...</ListingState>}
+
       {!cars.length && error && (
         <ListingState tone="error">
           {error instanceof Error ? error.message : "Failed to load cars"}
         </ListingState>
       )}
 
+      {isLoading && (
+        <div className="space-y-8">
+          <CarSectionSkeleton />
+          <CarSectionSkeleton />
+        </div>
+      )}
+
       {!isLoading && (cars.length > 0 || !error) && (
-        <>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {filteredCars.map((car) => (
-              <CarListingCard key={car.id} car={car} />
-            ))}
-          </div>
+        <div className="space-y-8">
+          {isRefreshing && (
+            <p className="text-xs text-muted-foreground">Refreshing listings…</p>
+          )}
+
+          <CarSection
+            title="Active listings"
+            description="Currently live listings. Cars with a price-change badge have their history graph loaded automatically."
+            cars={activeCars}
+            emptyMessage="No active cars match your filters."
+          />
+
+          <CarSection
+            title="Inactive listings"
+            description="Delisted or sold cars, kept for price-history reference."
+            cars={inactiveCars}
+            emptyMessage="No inactive cars match your filters."
+            tone="muted"
+          />
 
           {filteredCars.length === 0 && (
             <ListingState>No cars match your filters.</ListingState>
           )}
-        </>
+        </div>
       )}
     </main>
   );

@@ -1,16 +1,17 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import type { CarCard } from "@/api/cars"
+import type { PriceChangeCarCard } from "@/api/priceChangedCars"
 import { cn } from "@/lib/utils"
 import {
   formatCompactINR,
   formatKilometers,
   formatSource,
 } from "./formatters"
+import { PriceChangeBadge } from "./PriceChangeBadge"
 import { PriceHistorySection } from "./PriceHistorySection"
 
 type CarListingCardProps = {
-  car: CarCard
+  car: PriceChangeCarCard
 }
 
 function SpecPill({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,9 @@ function SpecPill({ children }: { children: React.ReactNode }) {
 }
 
 export function CarListingCard({ car }: CarListingCardProps) {
+  const hasPriceChange = car.priceChange !== 0
+  const isDimmed = car.booked || !car.isActive
+
   const mainContent = (
     <>
       <div className="relative aspect-[1.85] border-b bg-muted max-sm:aspect-auto max-sm:border-b-0 max-sm:border-r">
@@ -32,7 +36,7 @@ export function CarListingCard({ car }: CarListingCardProps) {
           <img
             src={car.coverImage}
             alt={`${car.brand} ${car.carName}`}
-            className={cn("h-full w-full object-cover", car.booked && "grayscale")}
+            className={cn("h-full w-full object-cover", isDimmed && "grayscale")}
             loading="lazy"
           />
         ) : (
@@ -40,12 +44,24 @@ export function CarListingCard({ car }: CarListingCardProps) {
             No image
           </div>
         )}
-        {car.booked && (
+
+        <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1.5">
+          <Badge variant="secondary" className="h-6 rounded-md px-2 text-xs font-medium capitalize">
+            {car.source}
+          </Badge>
+          {car.booked && (
+            <Badge variant="default" className="h-6 rounded-md px-2 text-xs shadow-sm">
+              Booked
+            </Badge>
+          )}
+        </div>
+
+        {!car.isActive && (
           <Badge
-            variant="default"
-            className="absolute left-2 top-2 h-6 rounded-md px-2 text-xs shadow-sm"
+            variant="outline"
+            className="absolute right-2 top-2 border-border bg-background/85 text-foreground backdrop-blur"
           >
-            Booked
+            Inactive
           </Badge>
         )}
       </div>
@@ -79,6 +95,11 @@ export function CarListingCard({ car }: CarListingCardProps) {
             {formatSource(car.source)}
           </Badge>
         </div>
+        {hasPriceChange && (
+          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+            <PriceChangeBadge change={car.priceChange} />
+          </div>
+        )}
       </CardContent>
     </>
   )
@@ -86,10 +107,10 @@ export function CarListingCard({ car }: CarListingCardProps) {
   return (
     <Card
       size="sm"
-      aria-disabled={car.booked}
+      aria-disabled={isDimmed}
       className={cn(
         "gap-0 overflow-hidden rounded-lg py-0 shadow-sm ring-border transition hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/25",
-        car.booked && "bg-muted/50 opacity-75 hover:translate-y-0 hover:shadow-sm"
+        isDimmed && "bg-muted/50 opacity-75 hover:translate-y-0 hover:shadow-sm"
       )}
     >
       {/* Clickable area is scoped to image + details only, so the price-history
@@ -109,6 +130,9 @@ export function CarListingCard({ car }: CarListingCardProps) {
         <div className="max-sm:grid max-sm:grid-cols-[9.25rem_minmax(0,1fr)]">{mainContent}</div>
       )}
 
+      {/* Always lazy: history only fetches once the user expands this
+          section, regardless of whether the car has a recorded price
+          change. The badge above is enough of an indicator on its own. */}
       <PriceHistorySection carId={car.id} />
     </Card>
   )

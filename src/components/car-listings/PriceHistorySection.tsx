@@ -13,6 +13,10 @@ import type { Granularity } from "@/lib/priceHistoryAggregation"
 
 type Props = {
   carId: string
+  /** Start expanded (and start fetching immediately) — used for cars that
+   * have a recorded price change, so their graph is loaded without the
+   * user needing to click. */
+  defaultOpen?: boolean
 }
 
 const GRANULARITIES: { value: Granularity; label: string }[] = [
@@ -20,8 +24,8 @@ const GRANULARITIES: { value: Granularity; label: string }[] = [
   { value: "month", label: "Monthly" },
 ]
 
-export function PriceHistorySection({ carId }: Props) {
-  const [open, setOpen] = useState(false)
+export function PriceHistorySection({ carId, defaultOpen = false }: Props) {
+  const [open, setOpen] = useState(defaultOpen)
   const [granularity, setGranularity] = useState<Granularity>("day")
 
   // enabled only while expanded — collapsing doesn't drop the cache (gcTime),

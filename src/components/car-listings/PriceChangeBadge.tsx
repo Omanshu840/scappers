@@ -1,15 +1,15 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatINR } from "@/lib/format";
+import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { formatINR } from "./formatters"
 
 type Props = {
-  change: number;
-  className?: string;
-};
+  change: number
+  className?: string
+}
 
 export function PriceChangeBadge({ change, className }: Props) {
-  const isDrop = change < 0;
-  const isFlat = change === 0;
+  const isDrop = change < 0
+  const isFlat = change === 0
 
   return (
     <span
@@ -30,5 +30,5 @@ export function PriceChangeBadge({ change, className }: Props) {
       )}
       ₹{formatINR(Math.abs(change))}
     </span>
-  );
+  )
 }
