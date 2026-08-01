@@ -40,6 +40,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          VITE_LIVE_LISTINGS_API_URL: ${{ secrets.VITE_LIVE_LISTINGS_API_URL }}
         run: pnpm build
 
       - name: Upload Pages artifact
