@@ -7,11 +7,12 @@ import { CarSection } from "@/components/car-listings/CarSection";
 import { CarSectionSkeleton } from "@/components/car-listings/CarSectionSkeleton";
 import { useCars, useLiveCars } from "@/hooks/useCars";
 import { useAllCarsWithPriceInfo } from "@/hooks/useCarsWithPriceChanges";
-import type { SortOption, SourceFilter } from "@/components/car-listings/types";
+import type { BodyTypeFilter, SortOption, SourceFilter } from "@/components/car-listings/types";
 
 export default function CarListings() {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
+  const [bodyTypeFilter, setBodyTypeFilter] = useState<BodyTypeFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
 
   const queryClient = useQueryClient();
@@ -54,8 +55,9 @@ export default function CarListings() {
 
       const matchesSearch = !q || haystack.includes(q);
       const matchesSource = sourceFilter === "all" || car.source === sourceFilter;
+      const matchesBodyType = bodyTypeFilter === "all" || car.bodyType === bodyTypeFilter;
 
-      return matchesSearch && matchesSource;
+      return matchesSearch && matchesSource && matchesBodyType;
     });
 
     result = [...result].sort((a, b) =>
@@ -63,7 +65,7 @@ export default function CarListings() {
     );
 
     return result;
-  }, [cars, search, sourceFilter, sortBy]);
+  }, [cars, search, sourceFilter, bodyTypeFilter, sortBy]);
 
   const activeCars = filteredCars.filter((car) => car.isActive);
   const inactiveCars = filteredCars.filter((car) => !car.isActive);
@@ -76,9 +78,11 @@ export default function CarListings() {
         search={search}
         sourceFilter={sourceFilter}
         sortBy={sortBy}
+        bodyTypeFilter={bodyTypeFilter}
         onSearchChange={setSearch}
         onSourceFilterChange={setSourceFilter}
         onSortByChange={setSortBy}
+        onBodyTypeFilterChange={setBodyTypeFilter}
       />
 
       {!cars.length && error && (
@@ -102,7 +106,7 @@ export default function CarListings() {
 
           <CarSection
             title="Active listings"
-            description="Currently live listings. Cars with a price-change badge have their history graph loaded automatically."
+            description="Currently live listings. Cars with a price-change badge have moved in price since first tracked."
             cars={activeCars}
             emptyMessage="No active cars match your filters."
           />

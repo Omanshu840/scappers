@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase";
 import {
   getAdjustedPrice,
+  getBodyType,
   getBooked,
   getBrand,
   getCarName,
@@ -34,6 +35,7 @@ function transformPriceChangeCars(data: any[]): PriceChangeCarCard[] {
         brand: getBrand(row),
         carName: getCarName(row),
         variant: row.variant ?? row.raw_json?.variant ?? "",
+        bodyType: getBodyType(row),
         kmDriven: getKmDriven(row),
         modelYear: getModelYear(row),
         coverImage: getCoverImage(row),

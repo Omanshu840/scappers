@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase";
 import {
   getAdjustedPrice,
+  getBodyType,
   getBooked,
   getBrand,
   getCarName,
@@ -9,8 +10,9 @@ import {
   getKmDriven,
   getLocation,
   getModelYear,
+  type BodyType,
 } from "../lib/carDisplay";
- 
+
 export type CarCard = {
   id: string;
   externalId: string;
@@ -18,6 +20,7 @@ export type CarCard = {
   brand: string;
   carName: string;
   variant: string;
+  bodyType: BodyType | null;
   kmDriven: number | null;
   modelYear: number | null;
   coverImage: string | null;
@@ -27,13 +30,13 @@ export type CarCard = {
   booked: boolean;
   detailUrl: string | null;
 };
- 
+
 function transformCars(data: any[]) {
   const cars =
     (data ?? []).map((row: any) => {
       const originalPrice = Number(row.latest_price ?? 0);
       const adjustedPrice = getAdjustedPrice(row.source, originalPrice);
- 
+
       return {
         id: row.id,
         externalId: row.external_id,
@@ -41,6 +44,7 @@ function transformCars(data: any[]) {
         brand: getBrand(row),
         carName: getCarName(row),
         variant: row.variant ?? row.raw_json?.variant ?? "",
+        bodyType: getBodyType(row),
         kmDriven: getKmDriven(row),
         modelYear: getModelYear(row),
         coverImage: getCoverImage(row),
@@ -52,10 +56,9 @@ function transformCars(data: any[]) {
       } satisfies CarCard;
     })
     .sort((a, b) => a.price - b.price);
- 
+
   return cars
 }
- 
 
 export async function getCars(): Promise<CarCard[]> {
   const { data, error } = await supabase

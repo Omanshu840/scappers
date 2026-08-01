@@ -72,6 +72,27 @@ export function getBooked(row: any) {
   return row.source === "spinny" && row.raw_json?.booked === true;
 }
 
+export type BodyType = "suv" | "hatchback" | "sedan";
+
+// Cars24 raw values: 'Hatchback' | 'SUV' | 'Sedan'
+// Spinny raw values: 'suv' | 'sedan' | 'muv' | 'hatchback'
+// 'muv' is folded into 'suv' — same filter bucket in the UI.
+const BODY_TYPE_MAP: Record<string, BodyType> = {
+  suv: "suv",
+  muv: "suv",
+  hatchback: "hatchback",
+  sedan: "sedan",
+};
+
+export function getBodyType(row: any): BodyType | null {
+  const raw =
+    row.source === "cars24" ? row.raw_json?.bodyType : row.raw_json?.body_type;
+
+  if (typeof raw !== "string") return null;
+
+  return BODY_TYPE_MAP[raw.trim().toLowerCase()] ?? null;
+}
+
 function findUrlByKeys(value: unknown, keys: string[]) {
   const seen = new Set<unknown>();
   const stack: unknown[] = [value];
