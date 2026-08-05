@@ -113,6 +113,16 @@ create policy "cars are publicly readable"
   to anon, authenticated
   using (true);
 
+-- Allow the client-side app to update notes on an existing car without requiring
+-- a separate server-side endpoint. This is intentionally broad because the
+-- app uses the anon/public key for direct Supabase updates.
+drop policy if exists "cars notes are updatable" on public.cars;
+create policy "cars notes are updatable"
+  on public.cars for update
+  to anon, authenticated
+  using (true)
+  with check (true);
+
 drop policy if exists "price history is publicly readable" on public.car_price_history;
 create policy "price history is publicly readable"
   on public.car_price_history for select

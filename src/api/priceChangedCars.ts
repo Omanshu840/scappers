@@ -49,6 +49,7 @@ function transformPriceChangeCars(data: any[]): PriceChangeCarCard[] {
         priceChange: Number(row.price_change ?? 0),
         previousPriceDate: row.previous_price_date ?? null,
         lastSeenAt: row.last_seen_at,
+        notes: row.notes ?? null,
       } satisfies PriceChangeCarCard;
     })
     // biggest movers first; cars with no change at all naturally sort last
@@ -56,7 +57,7 @@ function transformPriceChangeCars(data: any[]): PriceChangeCarCard[] {
 }
 
 const VIEW_COLUMNS =
-  "id, source, external_id, last_seen_at, is_active, make, model, variant, year, city, odometer_km, latest_price, raw_json, previous_price, price_change, previous_price_date";
+  "id, source, external_id, last_seen_at, is_active, make, model, variant, year, city, odometer_km, latest_price, raw_json, notes, previous_price, price_change, previous_price_date";
 
 async function fetchCarsWithPriceChangeView(onlyChanged: boolean): Promise<PriceChangeCarCard[]> {
   let query = supabase.from("cars_with_price_change").select(VIEW_COLUMNS);

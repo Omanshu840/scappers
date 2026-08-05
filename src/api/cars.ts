@@ -29,6 +29,7 @@ export type CarCard = {
   location: string | null;
   booked: boolean;
   detailUrl: string | null;
+  notes: string | null;
 };
 
 function transformCars(data: any[]) {
@@ -53,6 +54,7 @@ function transformCars(data: any[]) {
         location: getLocation(row),
         booked: getBooked(row),
         detailUrl: getDetailUrl(row),
+        notes: row.notes ?? null,
       } satisfies CarCard;
     })
     .sort((a, b) => a.price - b.price);
@@ -63,7 +65,7 @@ function transformCars(data: any[]) {
 export async function getCars(): Promise<CarCard[]> {
   const { data, error } = await supabase
     .from("cars")
-    .select("id, source, external_id, make, model, variant, year, city, odometer_km, latest_price, raw_json")
+    .select("id, source, external_id, make, model, variant, year, city, odometer_km, latest_price, raw_json, notes")
     .eq("is_active", true);
 
   if (error) throw error;

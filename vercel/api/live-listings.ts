@@ -16,9 +16,16 @@
 //      is_active = true) — no extra DB read needed to know what's new vs.
 //      changed vs. unchanged, since externalId + originalPrice + id are all
 //      right there in the payload.
+//      IMPORTANT: `existingCars` only covers ACTIVE cars. A car that was
+//      previously marked inactive and reappears in a fresh scrape is NOT in
+//      that list — it looks "new" from the client's point of view, even
+//      though a row for it already exists in the DB. We handle that below
+//      with an upsert instead of a plain insert (see step 3).
 //   3. Only WRITES rows that are brand new or whose price changed. Unchanged
 //      rows are skipped entirely — this endpoint can be hit on every page
-//      load, so we avoid needless writes.
+//      load, so we avoid needless writes. "New" rows are upserted (not
+//      inserted) on (source, external_id) to safely handle reactivated
+//      listings without violating the unique constraint.
 //   4. Marks cars that disappeared from this run as inactive (per source).
 //   5. Returns the full current active dataset in the shape transformCars()
 //      in lib/cars.ts expects.
@@ -293,12 +300,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     ]);
 
-    const allCars = [...cars24, ...spinny];
+    const rawCars = [...cars24, ...spinny];
 
-    if (allCars.length === 0) {
+    if (rawCars.length === 0) {
       res.status(502).json({ error: "Both Cars24 and Spinny fetches failed or returned nothing" });
       return;
     }
+
+    // De-dupe by (source, external_id) in case a source's pagination ever
+    // overlaps and returns the same listing twice in one run — a single
+    // upsert batch can't target the same conflict row more than once
+    // (Postgres: "ON CONFLICT DO UPDATE command cannot affect row a second
+    // time"), so we collapse to the last-seen copy per key up front.
+    const dedupedByKey = new Map<string, NormalizedCar>();
+    for (const c of rawCars) {
+      dedupedByKey.set(`${c.source}:${c.external_id}`, c);
+    }
+    const allCars = Array.from(dedupedByKey.values());
 
     // 2. Build a lookup from what the client already has (its is_active=true
     // rows from getCars()) — this tells us exactly what's new vs. changed
@@ -311,8 +329,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const now = new Date().toISOString();
 
-    const toInsert: any[] = [];
-    const toUpdate: { id: string; fields: any }[] = [];
+    const toUpsert: any[] = []; // new to the client's active set OR reactivated-from-inactive
+    const toUpdate: { id: string; fields: any }[] = []; // known-active, price changed
     const changed: { key: string; carId?: string; price: number }[] = [];
 
     for (const c of allCars) {
@@ -336,10 +354,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
 
       if (!existing) {
-        toInsert.push({
+        // Could genuinely be new, OR a previously-inactive car reappearing
+        // (existingCars only ever contains is_active = true rows, so we
+        // can't tell which from here). Upsert on (source, external_id)
+        // handles both safely: true inserts get first_seen_at from the
+        // column's DB default since we deliberately omit it below;
+        // reactivations update the existing row and leave its original
+        // first_seen_at untouched, since the column isn't in this payload
+        // at all for PostgREST to include in the ON CONFLICT DO UPDATE SET.
+        toUpsert.push({
           source: c.source,
           external_id: c.external_id,
-          first_seen_at: now,
           ...fields,
         });
         changed.push({ key, price: c.price });
@@ -354,17 +379,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // else: unchanged -> skip entirely, no write
     }
 
-    // 3. Write new rows
-    const insertedIds = new Map<string, string>(); // "source:external_id" -> id
-    for (let i = 0; i < toInsert.length; i += CHUNK) {
-      const chunk = toInsert.slice(i, i + CHUNK);
+    // 3. Upsert new/reactivated rows
+    const upsertedIds = new Map<string, string>(); // "source:external_id" -> id
+    for (let i = 0; i < toUpsert.length; i += CHUNK) {
+      const chunk = toUpsert.slice(i, i + CHUNK);
       const { data, error } = await supabase
         .from("cars")
-        .insert(chunk)
+        .upsert(chunk, { onConflict: "source,external_id" })
         .select("id, source, external_id");
       if (error) throw error;
       for (const row of data ?? []) {
-        insertedIds.set(`${row.source}:${row.external_id}`, row.id);
+        upsertedIds.set(`${row.source}:${row.external_id}`, row.id);
       }
     }
 
@@ -385,7 +410,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const historyRows = changed
         .map(({ key, carId, price }) => {
-          const resolvedId = carId ?? insertedIds.get(key);
+          const resolvedId = carId ?? upsertedIds.get(key);
           if (!resolvedId) return null;
           return { car_id: resolvedId, scraped_date: today, price, is_active: true };
         })

@@ -1,4 +1,7 @@
+import { useState } from "react"
+import { FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import type { PriceChangeCarCard } from "@/api/priceChangedCars"
 import { cn } from "@/lib/utils"
@@ -9,6 +12,7 @@ import {
 } from "./formatters"
 import { PriceChangeBadge } from "./PriceChangeBadge"
 import { PriceHistorySection } from "./PriceHistorySection"
+import { CarNotesDialog } from "./CarNotesDialog.tsx" // Renamed import
 
 type CarListingCardProps = {
   car: PriceChangeCarCard
@@ -26,6 +30,7 @@ function SpecPill({ children }: { children: React.ReactNode }) {
 }
 
 export function CarListingCard({ car }: CarListingCardProps) {
+  const [isNotesOpen, setIsNotesOpen] = useState(false)
   const hasPriceChange = car.priceChange !== 0
   const isDimmed = car.booked || !car.isActive
 
@@ -45,25 +50,26 @@ export function CarListingCard({ car }: CarListingCardProps) {
           </div>
         )}
 
-        <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1.5">
-          <Badge variant="secondary" className="h-6 rounded-md px-2 text-xs font-medium capitalize">
-            {car.source}
-          </Badge>
-          {car.booked && (
-            <Badge variant="default" className="h-6 rounded-md px-2 text-xs shadow-sm">
-              Booked
+        <div className="absolute left-2 top-2 flex flex-col items-start gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="h-6 rounded-md px-2 text-xs font-medium capitalize">
+              {car.source}
+            </Badge>
+            {car.booked && (
+              <Badge variant="default" className="h-6 rounded-md px-2 text-xs shadow-sm">
+                Booked
+              </Badge>
+            )}
+          </div>
+          {!car.isActive && (
+            <Badge
+              variant="outline"
+              className="border-border bg-background/85 text-foreground backdrop-blur"
+            >
+              Inactive
             </Badge>
           )}
         </div>
-
-        {!car.isActive && (
-          <Badge
-            variant="outline"
-            className="absolute right-2 top-2 border-border bg-background/85 text-foreground backdrop-blur"
-          >
-            Inactive
-          </Badge>
-        )}
       </div>
       <CardContent className="space-y-2.5 p-3">
         <div className="space-y-0.5">
@@ -109,13 +115,11 @@ export function CarListingCard({ car }: CarListingCardProps) {
       size="sm"
       aria-disabled={isDimmed}
       className={cn(
-        "gap-0 overflow-hidden rounded-lg py-0 shadow-sm ring-border transition hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/25",
+        "relative gap-0 overflow-hidden rounded-lg py-0 shadow-sm ring-border transition hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/25",
         isDimmed && "bg-muted/50 opacity-75 hover:translate-y-0 hover:shadow-sm"
       )}
     >
-      {/* Clickable area is scoped to image + details only, so the price-history
-          toggle below can be its own interactive control without nesting a
-          <button> inside an <a> (invalid HTML) or fighting click handlers. */}
+      {/* Clickable area is scoped to image + details only */}
       {car.detailUrl ? (
         <a
           href={car.detailUrl}
@@ -130,9 +134,23 @@ export function CarListingCard({ car }: CarListingCardProps) {
         <div className="max-sm:grid max-sm:grid-cols-[9.25rem_minmax(0,1fr)]">{mainContent}</div>
       )}
 
-      {/* Always lazy: history only fetches once the user expands this
-          section, regardless of whether the car has a recorded price
-          change. The badge above is enough of an indicator on its own. */}
+      {/* Floating Notes Button over the top right of the card */}
+      <Button
+        size="icon"
+        variant="secondary"
+        className="absolute right-2 top-2 z-10 h-8 w-8 rounded-full bg-background/80 shadow-sm backdrop-blur transition-all hover:bg-background/95"
+        onClick={(e) => {
+          e.preventDefault()
+          setIsNotesOpen(true)
+        }}
+        aria-label="View or add notes"
+      >
+        <FileText className="h-4 w-4" />
+      </Button>
+
+      {/* Updated to use Dialog component */}
+      <CarNotesDialog car={car} open={isNotesOpen} onOpenChange={setIsNotesOpen} />
+
       <PriceHistorySection carId={car.id} />
     </Card>
   )
