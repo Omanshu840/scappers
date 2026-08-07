@@ -14,6 +14,8 @@ export default function CarListings() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [bodyTypeFilter, setBodyTypeFilter] = useState<BodyTypeFilter>("all");
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
+  const [interestedOnly, setInterestedOnly] = useState(false);
+  const [interestedCars, setInterestedCars] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
 
@@ -56,8 +58,13 @@ export default function CarListings() {
       const matchesSearch = !q || haystack.includes(q);
       const matchesSource = sourceFilter === "all" || car.source === sourceFilter;
       const matchesBodyType = bodyTypeFilter === "all" || car.bodyType === bodyTypeFilter;
+      const matchesInterest =
+        !interestedOnly ||
+        interestedCars.some((name) =>
+          `${car.brand} ${car.carName}`.toLowerCase().includes(name.toLowerCase())
+        );
 
-      return matchesSearch && matchesSource && matchesBodyType;
+      return matchesSearch && matchesSource && matchesBodyType && matchesInterest;
     });
 
     result = [...result].sort((a, b) =>
@@ -65,7 +72,7 @@ export default function CarListings() {
     );
 
     return result;
-  }, [cars, search, sourceFilter, bodyTypeFilter, sortBy]);
+  }, [cars, search, sourceFilter, bodyTypeFilter, sortBy, interestedOnly, interestedCars]);
 
   const activeCars = filteredCars.filter((car) => car.isActive);
   const inactiveCars = filteredCars.filter((car) => !car.isActive);
@@ -79,10 +86,13 @@ export default function CarListings() {
         sourceFilter={sourceFilter}
         sortBy={sortBy}
         bodyTypeFilter={bodyTypeFilter}
+        interestedOnly={interestedOnly}
         onSearchChange={setSearch}
         onSourceFilterChange={setSourceFilter}
         onSortByChange={setSortBy}
         onBodyTypeFilterChange={setBodyTypeFilter}
+        onInterestedOnlyChange={setInterestedOnly}
+        onInterestedCarsChange={setInterestedCars}
       />
 
       {!cars.length && error && (
